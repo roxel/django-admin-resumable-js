@@ -1,9 +1,14 @@
+import logging
+
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
 from django.http import HttpResponse
 from django.utils.functional import cached_property
 from django.views.generic import View
 from admin_resumable.files import ResumableFile
+
+
+logger = logging.getLogger(__name__)
 
 
 class UploadView(View):
@@ -22,18 +27,26 @@ class UploadView(View):
         chunk = request.FILES.get('file')
         r = ResumableFile(self.model_upload_field, user=request.user, params=request.POST)
         if not r.chunk_exists:
+            logging.debug("POST chunk processing: %s", r.current_chunk_name)
             r.process_chunk(chunk)
         if r.is_complete:
-            return HttpResponse(r.collect())
-        return HttpResponse('chunk uploaded')
+            logging.debug("POST chunk uploads complete: %s", r.filename)
+            completed = r.post_complete()
+            return HttpResponse(completed)
+        logging.debug("POST chunked uploaded: %s", r.current_chunk_name)
+        return HttpResponse('chunk uploaded: %s' % r.current_chunk_name)
 
     def get(self, request, *args, **kwargs):
         r = ResumableFile(self.model_upload_field, user=request.user, params=request.GET)
         if not r.chunk_exists:
+            logging.debug("POST chunk processing: %s", r.current_chunk_name)
             return HttpResponse('chunk not found', status=404)
         if r.is_complete:
-            return HttpResponse(r.collect())
-        return HttpResponse('chunk exists')
+            logging.debug("GET chunk uploads complete: %s", r.filename)
+            completed = r.get_complete()
+            return HttpResponse(completed)
+        logging.debug("GET chunk exists: %s", r.current_chunk_name)
+        return HttpResponse('chunk exists: %s' % r.current_chunk_name)
 
 
 admin_resumable = login_required(UploadView.as_view())

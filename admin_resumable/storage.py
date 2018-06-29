@@ -26,6 +26,8 @@ class ResumableStorage(object):
         Defaults to django.core.files.storage.FileSystemStorage.
         Chunk storage should be highly available for the server as saved chunks must be copied by the server
         for saving merged version in persistent storage.
+
+        Storage class must support linux like file paths to identify stored files.
         """
         storage_class = get_storage_class(self.chunk_storage_class_name)
         return storage_class(*args, **kwargs)
@@ -36,6 +38,8 @@ class ResumableStorage(object):
         or DEFAULT_FILE_STORAGE if the former is not found.
 
         Defaults to django.core.files.storage.FileSystemStorage.
+
+        Storage class must support linux like file paths to identify stored files.
         """
         storage_class = get_storage_class(self.persistent_storage_class_name)
         return storage_class(*args, **kwargs)
